@@ -1,0 +1,5 @@
+.env
+test.py
+issues_building
+.idea
+__pycache__/
