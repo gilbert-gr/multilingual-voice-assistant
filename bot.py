@@ -6,6 +6,7 @@ import speech_recognition
 import threading
 import pyttsx3
 import random
+import pyjokes
 
 IMAGE_SLEEP = Image.open("images/sleep.png")
 IMAGE_LISTEN = Image.open("images/listen.png")
@@ -68,6 +69,7 @@ class Bot:
                     text = text.lower()
                     print(text)
 
+                    # Bot activates
                     if "ok" in text:
                         data = pd.read_csv("user-data.csv")
                         if data["name"][0] == "x":
@@ -89,6 +91,9 @@ class Bot:
                                 text = text.lower()
                                 print(text)
 
+
+
+                                # Set username
                                 if "il mio nome è" in text:
                                     try:
                                         split = text.split()
@@ -133,6 +138,7 @@ class Bot:
 
 
 
+                                # Delete username
                                 elif "elimina il mio nome" in text:
                                     data = pd.read_csv("user-data.csv")
                                     if data["name"][0] == "x":
@@ -172,11 +178,20 @@ class Bot:
 
 
 
+                                # Asking how is going
                                 elif any(user_input in text for user_input in inputs_outputs_ita.USER_CHIEDE_COME_VA):
                                     answer = random.choice(inputs_outputs_ita.BOT_RISPONDE_COME_VA)
                                     self.talk(answer)
 
 
+                                # Tells a joke
+                                elif "barzelletta" in text or "battuta" in text:
+                                    joke = pyjokes.get_joke(language="it", category="all")
+                                    self.talk(joke)
+                                    print(f"joke: {joke}")
+
+
+                                # Bot goes to sleep
                                 elif text == "dormi":
                                     answer = random.choice(inputs_outputs_ita.BOT_SI_CONGEDA)
                                     self.talk(answer)
