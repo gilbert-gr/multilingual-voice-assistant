@@ -7,10 +7,20 @@ import threading
 import pyttsx3
 import random
 import pyjokes
+import requests
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
 
 IMAGE_SLEEP = Image.open("images/sleep.png")
 IMAGE_LISTEN = Image.open("images/listen.png")
 IMAGE_TALK = Image.open("images/talk.png")
+
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+GEOCODING_ENDPOINT = "https://api.openweathermap.org/geo/1.0/direct"
+WEATHER_FORECAST_ENDPOINT = "https://api.openweathermap.org/data/2.5/forecast"
 
 
 class Bot:
@@ -151,30 +161,143 @@ class Bot:
                                         confirm = False
 
                                         while not confirm:
+                                            try:
+                                                audio = self.recognizer.listen(mic)
+                                                confirm_text = self.recognizer.recognize_google(audio, language="it-IT")
+                                                confirm_text = confirm_text.lower().split()
+                                                print(confirm_text)
+
+                                                if "sì" in confirm_text:
+                                                    data.loc[0, "name"] = "x"
+                                                    data.to_csv("user-data.csv", index=False)
+
+                                                    self.talk("nome eliminato con successo")
+                                                    confirm = True
+                                                    continue
+
+                                                if "no" in confirm_text:
+                                                    self.talk("d'accordo se cambi idea ripeti il comando")
+                                                    confirm = True
+
+                                                else:
+                                                    self.talk("mi spiace, non ho capito")
+
+
+                                            except speech_recognition.UnknownValueError:
+                                                self.talk("non ho capito, puoi ripetere?")
+
+
+                                # Get weather
+                                elif "meteo" in text or "che tempo fa" in text:
+                                    if data["location"][0] == "x":
+                                        self.talk("non c'è un luogo impostato al momento, dimmi la tua località")
+                                        location = False
+
+                                        while not location:
+                                            try:
+                                                audio = self.recognizer.listen(mic)
+                                                user_location = self.recognizer.recognize_google(audio, language="it-IT")
+                                                user_location = user_location.lower()
+                                                print(f"location: {user_location}")
+
+                                                geocoding_params = {
+                                                    "q": user_location,
+                                                    "appid": WEATHER_API_KEY,
+                                                }
+
+                                                response = requests.get(url=GEOCODING_ENDPOINT, params=geocoding_params)
+                                                response.raise_for_status()
                                                 try:
-                                                    audio = self.recognizer.listen(mic)
-                                                    confirm_text = self.recognizer.recognize_google(audio, language="it-IT")
-                                                    confirm_text = confirm_text.lower().split()
-                                                    print(confirm_text)
+                                                    user_lat = response.json()[0]["lat"]
+                                                    user_lon = response.json()[0]["lon"]
+                                                    print(f"location:{user_location}\nlat: {user_lat}\nlon: {user_lon}")
+                                                    data.loc[0, "location"] = user_location
+                                                    data.loc[0, "lat"] = user_lat
+                                                    data.loc[0, "lon"] = user_lon
+                                                    data.to_csv("user-data.csv", index=False)
+                                                    self.talk(f"{user_location} impostata come località, per cambiarla"
+                                                              f"dimmi cambia località")
+                                                    location = True
 
-                                                    if "sì" in confirm_text:
-                                                        data.loc[0, "name"] = "x"
-                                                        data.to_csv("user-data.csv", index=False)
-
-                                                        self.talk("nome eliminato con successo")
-                                                        confirm = True
-                                                        continue
-
-                                                    if "no" in confirm_text:
-                                                        self.talk("d'accordo se cambi idea ripeti il comando")
-                                                        confirm = True
-
-                                                    else:
-                                                        self.talk("mi spiace, non ho capito")
+                                                except IndexError:
+                                                    self.talk("località non trovata")
+                                                    location = True
+                                                    continue
 
 
-                                                except speech_recognition.UnknownValueError:
-                                                    self.talk("non ho capito, puoi ripetere?")
+                                            except speech_recognition.UnknownValueError:
+                                                self.talk("non ho capito, puoi ripetere?")
+
+
+                                    else:
+                                        user_location = data["location"][0]
+                                        user_lat = data["lat"][0]
+                                        user_lon = data["lon"][0]
+                                        print(f"location:{user_location}\nlat: {user_lat}\nlon: {user_lon}")
+
+
+                                    params = {
+                                        "lat": user_lat,
+                                        "lon": user_lon,
+                                        "appid": WEATHER_API_KEY,
+                                        "lang": "it",
+                                        "units": "metric"
+                                    }
+
+                                    response = requests.get(WEATHER_FORECAST_ENDPOINT, params=params)
+                                    response.raise_for_status()
+
+                                    today_description = response.json()["list"][1]["weather"][0]["description"]
+                                    today_temperature = response.json()["list"][1]["main"]["temp"]
+                                    tomorrow_description = response.json()["list"][8]["weather"][0]["description"]
+                                    tomorrow_temperature = response.json()["list"][8]["main"]["temp"]
+
+                                    self.talk(f"Il tempo di oggi a {user_location} sarà {today_description} e le"
+                                              f"temperature si aggireranno intorno ai {today_temperature} gradi celsius"
+                                              f"Domani invece sarà {tomorrow_description} e le temperature intorno"
+                                              f"ai {tomorrow_temperature} gradi")
+
+
+
+
+                                elif "cambia località" in text:
+                                    self.talk("dimmi la tuà località")
+                                    location = False
+
+                                    while not location:
+                                        try:
+                                            audio = self.recognizer.listen(mic)
+                                            user_location = self.recognizer.recognize_google(audio, language="it-IT")
+                                            user_location = user_location.lower()
+                                            print(f"location: {user_location}")
+
+                                            geocoding_params = {
+                                                "q": user_location,
+                                                "appid": WEATHER_API_KEY,
+                                            }
+
+                                            response = requests.get(url=GEOCODING_ENDPOINT, params=geocoding_params)
+                                            response.raise_for_status()
+                                            try:
+                                                user_lat = response.json()[0]["lat"]
+                                                user_lon = response.json()[0]["lon"]
+                                                print(f"lat: {user_lat}\nlon: {user_lon}")
+                                                data.loc[0, "location"] = user_location
+                                                data.loc[0, "lat"] = user_lat
+                                                data.loc[0, "lon"] = user_lon
+                                                data.to_csv("user-data.csv", index=False)
+                                                self.talk(f"{user_location} impostata come località, per cambiarla"
+                                                          f"dimmi cambia località")
+                                                location = True
+
+                                            except IndexError:
+                                                self.talk("località non trovata")
+                                                location = True
+
+
+                                        except speech_recognition.UnknownValueError:
+                                            self.talk("non ho capito, puoi ripetere?")
+
 
 
 
@@ -187,8 +310,8 @@ class Bot:
                                 # Tells a joke
                                 elif "barzelletta" in text or "battuta" in text:
                                     joke = pyjokes.get_joke(language="it", category="all")
-                                    self.talk(joke)
                                     print(f"joke: {joke}")
+                                    self.talk(joke)
 
 
                                 # Bot goes to sleep

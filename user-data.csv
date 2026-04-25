@@ -1,2 +1,2 @@
-name,location
-x,x
+name,location,lat,lon
+x,x,0.00,0.00
