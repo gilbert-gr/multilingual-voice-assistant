@@ -220,9 +220,7 @@ class Bot:
                                                     location = True
 
                                                 except IndexError:
-                                                    self.talk("località non trovata")
-                                                    location = True
-                                                    continue
+                                                    self.talk("località non trovata, prego ripeti")
 
 
                                             except speech_recognition.UnknownValueError:
@@ -259,7 +257,7 @@ class Bot:
 
 
 
-
+                                # Change user location
                                 elif "cambia località" in text:
                                     self.talk("dimmi la tuà località")
                                     location = False
@@ -291,8 +289,8 @@ class Bot:
                                                 location = True
 
                                             except IndexError:
-                                                self.talk("località non trovata")
-                                                location = True
+                                                self.talk("località non trovata, prego ripeti")
+
 
 
                                         except speech_recognition.UnknownValueError:
@@ -307,6 +305,12 @@ class Bot:
                                     self.talk(answer)
 
 
+                                # Saying thank you
+                                elif any(user_input in text for user_input in inputs_outputs_ita.USER_RINGRAZIA):
+                                    answer = random.choice(inputs_outputs_ita.BOT_RISPONDE_A_GRAZIE)
+                                    self.talk(answer)
+
+
                                 # Tells a joke
                                 elif "barzelletta" in text or "battuta" in text:
                                     joke = pyjokes.get_joke(language="it", category="all")
@@ -315,7 +319,7 @@ class Bot:
 
 
                                 # Bot goes to sleep
-                                elif text == "dormi":
+                                elif "dormi" in text:
                                     answer = random.choice(inputs_outputs_ita.BOT_SI_CONGEDA)
                                     self.talk(answer)
 
