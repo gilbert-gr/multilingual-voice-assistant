@@ -8,6 +8,7 @@ import pyttsx3
 import random
 import pyjokes
 import requests
+import time
 from dotenv import load_dotenv
 import os
 
@@ -34,7 +35,13 @@ class Bot:
 
         self.root.geometry("424x632")
 
-        self.active = False
+        self.is_active = False
+        self.start_timer = 0
+        self.finish_timer = 0
+        self.timer = 0
+        self.timer_is_on = None
+
+        self.is_talking = False
 
         self.image = ImageTk.PhotoImage(IMAGE_SLEEP)
 
@@ -59,13 +66,39 @@ class Bot:
         self.label.config(image=self.image)
 
     def talk(self, speech):
+        self.wait_if_is_talking()
+
+        self.is_talking = True
         self.set_img_talk()
         engine = pyttsx3.init()
         rate = engine.getProperty('rate')
         engine.setProperty('rate', rate - 20)
         engine.say(speech)
         engine.runAndWait()
-        self.set_img_listen()
+        if self.is_active:
+            self.set_img_listen()
+        else:
+            self.set_img_sleep()
+        self.is_talking = False
+
+    def check_timer(self):
+        self.timer_is_on = True
+        while self.timer_is_on:
+            time.sleep(1)
+            self.finish_timer = time.time()
+            if self.finish_timer - self.start_timer >= self.timer:
+                self.talk("timer finito, premi enter per interrompermi")
+                self.timer = 0
+                self.root.bind("<Return>", self.stop_timer)
+
+    def stop_timer(self, event):
+        self.timer_is_on = False
+
+    def wait_if_is_talking(self):
+        while self.is_talking:
+            time.sleep(0.1)
+
+
 
     def run(self):
         while True:
@@ -81,6 +114,8 @@ class Bot:
 
                     # Bot activates
                     if "ok" in text:
+                        self.is_active = True
+
                         data = pd.read_csv("user-data.csv")
                         if data["name"][0] == "x":
                             answer = random.choice(inputs_outputs_ita.BOT_SALUTA).replace("utente", "")
@@ -91,9 +126,7 @@ class Bot:
                             answer = random.choice(inputs_outputs_ita.BOT_SALUTA).replace("utente", data["name"][0])
                             self.talk(answer)
 
-                        self.active = True
-
-                        while self.active:
+                        while self.is_active:
                             try:
                                 self.recognizer.adjust_for_ambient_noise(mic, 0.2)
                                 audio = self.recognizer.listen(mic)
@@ -109,6 +142,9 @@ class Bot:
                                         split = text.split()
                                         user_name_index = split.index("è") + 1
                                         user_name = split[user_name_index]
+                                        if user_name == "x":
+                                            self.talk("nome non valido")
+                                            continue
                                         self.talk(f"Il tuo nome è {user_name}, conferma dicendo sì o no")
                                         confirm = False
 
@@ -122,6 +158,8 @@ class Bot:
                                                 confirm_text = self.recognizer.recognize_google(audio, language="it-IT")
                                                 confirm_text = confirm_text.lower().split()
                                                 print(confirm_text)
+
+                                                self.wait_if_is_talking()
 
                                                 if "sì" in confirm_text:
                                                     data.loc[0, "name"] = user_name
@@ -167,6 +205,8 @@ class Bot:
                                                 confirm_text = confirm_text.lower().split()
                                                 print(confirm_text)
 
+                                                self.wait_if_is_talking()
+
                                                 if "sì" in confirm_text:
                                                     data.loc[0, "name"] = "x"
                                                     data.to_csv("user-data.csv", index=False)
@@ -200,6 +240,12 @@ class Bot:
                                                 user_location = user_location.lower()
                                                 print(f"location: {user_location}")
 
+                                                self.wait_if_is_talking()
+
+                                                if user_location == "x":
+                                                    self.talk("località non valida, prego ripeti")
+                                                    continue
+
                                                 geocoding_params = {
                                                     "q": user_location,
                                                     "appid": WEATHER_API_KEY,
@@ -215,12 +261,13 @@ class Bot:
                                                     data.loc[0, "lat"] = user_lat
                                                     data.loc[0, "lon"] = user_lon
                                                     data.to_csv("user-data.csv", index=False)
-                                                    self.talk(f"{user_location} impostata come località, per cambiarla"
-                                                              f"dimmi cambia località")
+                                                    self.talk(f"{user_location} impostata come località, in futuro, per"
+                                                          f"cambiarla dimmi cambia località")
                                                     location = True
 
                                                 except IndexError:
-                                                    self.talk("località non trovata, prego ripeti")
+                                                    self.talk("località non trovata, prego ripeti solo il nome della"
+                                                              "località")
 
 
                                             except speech_recognition.UnknownValueError:
@@ -252,7 +299,7 @@ class Bot:
 
                                     self.talk(f"Il tempo di oggi a {user_location} sarà {today_description} e le"
                                               f"temperature si aggireranno intorno ai {today_temperature} gradi celsius"
-                                              f"Domani invece sarà {tomorrow_description} e le temperature intorno"
+                                              f"Invece domani sarà {tomorrow_description} e le temperature intorno"
                                               f"ai {tomorrow_temperature} gradi")
 
 
@@ -269,6 +316,12 @@ class Bot:
                                             user_location = user_location.lower()
                                             print(f"location: {user_location}")
 
+                                            self.wait_if_is_talking()
+
+                                            if user_location == "x":
+                                                self.talk("località non valida, prego ripeti")
+                                                continue
+
                                             geocoding_params = {
                                                 "q": user_location,
                                                 "appid": WEATHER_API_KEY,
@@ -284,17 +337,74 @@ class Bot:
                                                 data.loc[0, "lat"] = user_lat
                                                 data.loc[0, "lon"] = user_lon
                                                 data.to_csv("user-data.csv", index=False)
-                                                self.talk(f"{user_location} impostata come località, per cambiarla"
-                                                          f"dimmi cambia località")
+                                                self.talk(f"{user_location} impostata come località, in futuro, per "
+                                                          f"cambiarla dimmi cambia località")
                                                 location = True
 
                                             except IndexError:
-                                                self.talk("località non trovata, prego ripeti")
+                                                self.talk("località non trovata, prego ripeti solo il nome della"
+                                                              "località")
 
 
 
                                         except speech_recognition.UnknownValueError:
                                             self.talk("non ho capito, puoi ripetere?")
+
+
+
+                                elif "timer" in text:
+                                    seconds_timer = 0
+                                    minutes_timer = 0
+
+                                    if self.timer != 0:
+                                        self.talk("c'è già un timer in corso")
+                                        continue
+                                    if "secondi" in text:
+                                        seconds_index = text.split().index("secondi")
+                                        seconds_timer = text.split()[seconds_index - 1]
+                                        if seconds_timer == "un":
+                                            seconds_timer = 1
+                                        if "minuti" in text or "minuto" in text:
+                                            minutes_index = text.split().index("minuti")
+                                            minutes_timer = text.split()[minutes_index - 1]
+                                        elif "minuto" in text:
+                                            minutes_timer = 1
+
+
+                                    elif "minuti" in text:
+                                            minutes_index = text.split().index("minuti")
+                                            minutes_timer = text.split()[minutes_index - 1]
+                                            if "secondo" in text:
+                                                seconds_timer = 1
+
+                                    elif "minuto" in text:
+                                        minutes_timer = 1
+                                        if "secondi" in text:
+                                            seconds_index = text.split().index("secondi")
+                                            seconds_timer = text.split()[seconds_index - 1]
+                                        elif "secondo" in text:
+                                            seconds_timer = 1
+
+                                    elif "secondo" in text:
+                                        seconds_timer = 1
+
+                                    else:
+                                        self.talk("Non ho capito di quanto tempo impostare il timer")
+
+                                    self.timer = int(minutes_timer) * 60 + int(seconds_timer)
+
+                                    if self.timer == 0:
+                                        self.talk("non posso impostare un timer di zero secondi dai")
+                                        continue
+
+                                    self.talk(f"okay, imposto un timer di {minutes_timer} minuti e {seconds_timer}"
+                                              f"secondi")
+                                    print(f"{minutes_timer} minuti e {seconds_timer} secondi")
+
+                                    print(f"{self.timer} secondi totali")
+                                    self.start_timer = time.time()
+                                    threading.Thread(target=self.check_timer, daemon=True).start()
+
 
 
 
@@ -324,10 +434,10 @@ class Bot:
                                     self.talk(answer)
 
                                     self.set_img_sleep()
-                                    self.active = False
+                                    self.is_active = False
 
                                 else:
-                                    pass
+                                    continue
 
                             except speech_recognition.UnknownValueError:
                                 continue
