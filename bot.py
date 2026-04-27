@@ -18,6 +18,7 @@ load_dotenv()
 IMAGE_SLEEP = Image.open("images/sleep.png")
 IMAGE_LISTEN = Image.open("images/listen.png")
 IMAGE_TALK = Image.open("images/talk.png")
+IMAGE_TIMER = Image.open("images/timer.png")
 
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 GEOCODING_ENDPOINT = "https://api.openweathermap.org/geo/1.0/direct"
@@ -65,20 +66,26 @@ class Bot:
         self.image = ImageTk.PhotoImage(IMAGE_TALK)
         self.label.config(image=self.image)
 
-    def talk(self, speech):
+    def set_img_timer(self):
+        self.image = ImageTk.PhotoImage(IMAGE_TIMER)
+        self.label.config(image=self.image)
+
+    def talk(self, speech, mood="normal"):
         self.wait_if_is_talking()
 
         self.is_talking = True
-        self.set_img_talk()
+        if mood == "normal":
+            self.set_img_talk()
         engine = pyttsx3.init()
         rate = engine.getProperty('rate')
         engine.setProperty('rate', rate - 20)
         engine.say(speech)
         engine.runAndWait()
-        if self.is_active:
-            self.set_img_listen()
-        else:
-            self.set_img_sleep()
+        if mood == "normal":
+            if self.is_active:
+                self.set_img_listen()
+            else:
+                self.set_img_sleep()
         self.is_talking = False
 
     def check_timer(self):
@@ -87,12 +94,17 @@ class Bot:
             time.sleep(1)
             self.finish_timer = time.time()
             if self.finish_timer - self.start_timer >= self.timer:
-                self.talk("timer finito, premi enter per interrompermi")
+                self.set_img_timer()
+                self.talk("timer finito, premi enter per interrompermi", mood="timer")
                 self.timer = 0
                 self.root.bind("<Return>", self.stop_timer)
 
     def stop_timer(self, event):
         self.timer_is_on = False
+        if self.is_active:
+            self.set_img_listen()
+        else:
+            self.set_img_sleep()
 
     def wait_if_is_talking(self):
         while self.is_talking:
@@ -137,7 +149,7 @@ class Bot:
 
 
                                 # Set username
-                                if "il mio nome è" in text:
+                                if "mio nome è" in text:
                                     try:
                                         split = text.split()
                                         user_name_index = split.index("è") + 1
@@ -153,36 +165,37 @@ class Bot:
                                         continue
 
                                     while not confirm:
-                                            try:
-                                                audio = self.recognizer.listen(mic)
-                                                confirm_text = self.recognizer.recognize_google(audio, language="it-IT")
-                                                confirm_text = confirm_text.lower().split()
-                                                print(confirm_text)
+                                        self.wait_if_is_talking()
+                                        try:
+                                            audio = self.recognizer.listen(mic)
+                                            if self.is_talking:
+                                                continue
+                                            confirm_text = self.recognizer.recognize_google(audio, language="it-IT")
+                                            confirm_text = confirm_text.lower().split()
+                                            print(confirm_text)
 
-                                                self.wait_if_is_talking()
+                                            if "sì" in confirm_text:
+                                                data.loc[0, "name"] = user_name
+                                                data.to_csv("user-data.csv", index=False)
 
-                                                if "sì" in confirm_text:
-                                                    data.loc[0, "name"] = user_name
-                                                    data.to_csv("user-data.csv", index=False)
+                                                self.talk(
+                                                    "Okay, memorizzato! se in seguito vuoi modificarlo dimmi il "
+                                                    "mio nome è più il tuo nome, per eliminarlo dimmi elimina "
+                                                    "il mio nome")
+                                                confirm = True
+                                                continue
 
-                                                    self.talk(
-                                                        "Okay, memorizzato! se in seguito vuoi modificarlo dimmi il "
-                                                        "mio nome è più il tuo nome, per eliminarlo dimmi elimina "
-                                                        "il mio nome")
-                                                    confirm = True
-                                                    continue
+                                            if "no" in confirm_text:
+                                                self.talk("mi spiace, se vuoi impostare un nome, dimmi il mio nome "
+                                                          "è più il tuo nome")
+                                                confirm = True
 
-                                                if "no" in confirm_text:
-                                                    self.talk("mi spiace, se vuoi impostare un nome, dimmi il mio nome "
-                                                              "è più il tuo nome")
-                                                    confirm = True
-
-                                                else:
-                                                    self.talk("mi spiace, non ho capito")
+                                            else:
+                                                self.talk("mi spiace, non ho capito")
 
 
-                                            except speech_recognition.UnknownValueError:
-                                                self.talk("non ho capito, puoi ripetere?")
+                                        except speech_recognition.UnknownValueError:
+                                            self.talk("non ho capito, puoi ripetere?")
 
 
 
@@ -199,8 +212,11 @@ class Bot:
                                         confirm = False
 
                                         while not confirm:
+                                            self.wait_if_is_talking()
                                             try:
                                                 audio = self.recognizer.listen(mic)
+                                                if self.is_talking:
+                                                    continue
                                                 confirm_text = self.recognizer.recognize_google(audio, language="it-IT")
                                                 confirm_text = confirm_text.lower().split()
                                                 print(confirm_text)
@@ -234,8 +250,11 @@ class Bot:
                                         location = False
 
                                         while not location:
+                                            self.wait_if_is_talking()
                                             try:
                                                 audio = self.recognizer.listen(mic)
+                                                if self.is_talking:
+                                                    continue
                                                 user_location = self.recognizer.recognize_google(audio, language="it-IT")
                                                 user_location = user_location.lower()
                                                 print(f"location: {user_location}")
@@ -310,8 +329,11 @@ class Bot:
                                     location = False
 
                                     while not location:
+                                        self.wait_if_is_talking()
                                         try:
                                             audio = self.recognizer.listen(mic)
+                                            if self.is_talking:
+                                                continue
                                             user_location = self.recognizer.recognize_google(audio, language="it-IT")
                                             user_location = user_location.lower()
                                             print(f"location: {user_location}")
@@ -352,6 +374,7 @@ class Bot:
 
 
 
+                                # Set timer
                                 elif "timer" in text:
                                     seconds_timer = 0
                                     minutes_timer = 0
@@ -364,7 +387,7 @@ class Bot:
                                         seconds_timer = text.split()[seconds_index - 1]
                                         if seconds_timer == "un":
                                             seconds_timer = 1
-                                        if "minuti" in text or "minuto" in text:
+                                        if "minuti" in text:
                                             minutes_index = text.split().index("minuti")
                                             minutes_timer = text.split()[minutes_index - 1]
                                         elif "minuto" in text:
@@ -397,9 +420,25 @@ class Bot:
                                         self.talk("non posso impostare un timer di zero secondi dai")
                                         continue
 
-                                    self.talk(f"okay, imposto un timer di {minutes_timer} minuti e {seconds_timer}"
-                                              f"secondi")
-                                    print(f"{minutes_timer} minuti e {seconds_timer} secondi")
+                                    if minutes_timer == 1:
+                                        if seconds_timer == 1:
+                                            self.talk(
+                                                f"okay, imposto un timer di un minuto e un secondo")
+                                            print(f"{minutes_timer} minuto e {seconds_timer} secondo")
+                                        else:
+                                            self.talk(
+                                                f"okay, imposto un timer di un minuto e {seconds_timer} secondi")
+                                            print(f"{minutes_timer} minuto e {seconds_timer} secondi")
+                                    elif seconds_timer == 1:
+                                        self.talk(
+                                            f"okay, imposto un timer di {minutes_timer} minuti e un secondo")
+                                        print(f"{minutes_timer} minuti e {seconds_timer} secondo")
+                                    else:
+                                        self.talk(
+                                            f"okay, imposto un timer di {minutes_timer} minuti e {seconds_timer}"
+                                            f"secondi")
+                                        print(f"{minutes_timer} minuti e {seconds_timer} secondi")
+
 
                                     print(f"{self.timer} secondi totali")
                                     self.start_timer = time.time()
