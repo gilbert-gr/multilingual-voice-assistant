@@ -7,6 +7,9 @@ import threading
 import pyttsx3
 import random
 import pyjokes
+import AppOpener
+import wikipedia
+import pywhatkit
 import requests
 import time
 from dotenv import load_dotenv
@@ -19,10 +22,13 @@ IMAGE_SLEEP = Image.open("images/sleep.png")
 IMAGE_LISTEN = Image.open("images/listen.png")
 IMAGE_TALK = Image.open("images/talk.png")
 IMAGE_TIMER = Image.open("images/timer.png")
+IMAGE_LOADING = Image.open("images/loading.png")
 
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 GEOCODING_ENDPOINT = "https://api.openweathermap.org/geo/1.0/direct"
 WEATHER_FORECAST_ENDPOINT = "https://api.openweathermap.org/data/2.5/forecast"
+
+wikipedia.set_lang("it")
 
 
 class Bot:
@@ -68,6 +74,10 @@ class Bot:
 
     def set_img_timer(self):
         self.image = ImageTk.PhotoImage(IMAGE_TIMER)
+        self.label.config(image=self.image)
+
+    def set_img_loading(self):
+        self.image = ImageTk.PhotoImage(IMAGE_LOADING)
         self.label.config(image=self.image)
 
     def talk(self, speech, mood="normal"):
@@ -191,7 +201,7 @@ class Bot:
                                                 confirm = True
 
                                             else:
-                                                self.talk("mi spiace, non ho capito")
+                                                self.talk("mi spiace, non ho capito, dimmi sì o no")
 
 
                                         except speech_recognition.UnknownValueError:
@@ -236,7 +246,7 @@ class Bot:
                                                     confirm = True
 
                                                 else:
-                                                    self.talk("mi spiace, non ho capito")
+                                                    self.talk("mi spiace, non ho capito, dimmi sì o no")
 
 
                                             except speech_recognition.UnknownValueError:
@@ -458,6 +468,51 @@ class Bot:
                                 elif any(user_input in text for user_input in inputs_outputs_ita.USER_RINGRAZIA):
                                     answer = random.choice(inputs_outputs_ita.BOT_RISPONDE_A_GRAZIE)
                                     self.talk(answer)
+
+
+                                # Searching on wikipedia
+                                elif any(user_input in text for user_input in inputs_outputs_ita.USER_CHIEDE_DI_CERCARE):
+                                    for user_input in inputs_outputs_ita.USER_CHIEDE_DI_CERCARE:
+                                        if user_input in text:
+                                            query = text.replace(user_input, "")
+
+                                    self.talk(f"cerco informazionni su {query}")
+                                    self.set_img_loading()
+                                    try:
+                                        search_result = wikipedia.summary(query, sentences=1)
+                                        print(search_result)
+                                        self.talk(f"ecco cos'ho trovato:{search_result}")
+                                    except wikipedia.exceptions.PageError:
+                                        self.talk("nessun risultato trovato")
+                                    except wikipedia.exceptions.DisambiguationError:
+                                        self.talk(f"ci sono diversi risultati per {query}, ho bisogno che tu sia"
+                                                  f"più specifico")
+
+
+                                # Plays something on youtube
+                                elif "metti" in text and "un video" in text or "su youtube" in text or "una canzone di" in text:
+                                    query = text
+                                    for words in inputs_outputs_ita.USER_CERCA_SU_YT:
+                                        if words in query:
+                                            query = query.replace(words, "")
+
+                                    self.talk(f"va bene metto un video di {query}")
+                                    print(f"cerco su youtube: {query}")
+                                    pywhatkit.playonyt(query)
+
+
+
+                                # Opens WhatsApp
+                                elif "apri whatsapp" in text:
+                                    self.talk("va bene, ti apro whatsapp")
+                                    AppOpener.open("whatsapp")
+
+
+                                # Opens Google
+                                elif "apri google" in text:
+                                    self.talk("ti apro subito google")
+                                    AppOpener.open("google chrome")
+
 
 
                                 # Tells a joke

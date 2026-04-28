@@ -6,3 +6,6 @@ BOT_RISPONDE_COME_VA = ["tutto bene grazie", "oggi alla grande!", "sono un bot, 
 
 USER_RINGRAZIA = ["grazie", "ringrazio", "ringraziarti"]
 BOT_RISPONDE_A_GRAZIE = ["sono programmato per questo", "ci mancherebbe", "tanto non ho altro da fare"]
+
+USER_CHIEDE_DI_CERCARE = ["chi è", "che cos'è", "chi sono", "dov'è", "cerca informazioni su", "cerca"]
+USER_CERCA_SU_YT = ["una canzone", "su youtube", "un video", "metti", "di"]
