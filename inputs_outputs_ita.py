@@ -8,4 +8,8 @@ USER_RINGRAZIA = ["grazie", "ringrazio", "ringraziarti"]
 BOT_RISPONDE_A_GRAZIE = ["sono programmato per questo", "ci mancherebbe", "tanto non ho altro da fare"]
 
 USER_CHIEDE_DI_CERCARE = ["chi è", "che cos'è", "chi sono", "dov'è", "cerca informazioni su", "cerca"]
-USER_CERCA_SU_YT = ["una canzone", "su youtube", "un video", "metti", "di"]
+USER_CERCA_SU_YT = ["una canzone di", "una canzone", "su youtube", "un video di", "un video", "metti"]
+
+USER_SI_LAMENTA = ["sei stupido", "non capisci niente", "non hai capito", "sei ignorante"]
+BOT_GESTISCE_LAMENTELE = ["tratta gli altri come vorresti essere trattato tu", "abbi pazienza, mia ha programmato un ragazzino",
+                          "ci sto provando, queste sono le mie possibilità"]

@@ -24,10 +24,13 @@ IMAGE_TALK = Image.open("images/talk.png")
 IMAGE_TIMER = Image.open("images/timer.png")
 IMAGE_LOADING = Image.open("images/loading.png")
 
+IMAGE_COMMANDS = Image.open("info/commands-ita.png")
+
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 GEOCODING_ENDPOINT = "https://api.openweathermap.org/geo/1.0/direct"
 WEATHER_FORECAST_ENDPOINT = "https://api.openweathermap.org/data/2.5/forecast"
 
+wikipedia.set_user_agent('Voice-Assistant/1.1 (contact@example.com)')
 wikipedia.set_lang("it")
 
 
@@ -38,9 +41,11 @@ class Bot:
         self.recognizer.energy_threshold = 300
 
         self.root = Tk()
-        self.root.title("Flick")
+        self.root.title("Bot")
 
         self.root.geometry("424x632")
+
+        print("Dire 'ok' per svegliare il bot\nDopodiché per conoscere i comandi dire 'info'")
 
         self.is_active = False
         self.start_timer = 0
@@ -86,6 +91,8 @@ class Bot:
         self.is_talking = True
         if mood == "normal":
             self.set_img_talk()
+        elif mood == "loading":
+            self.set_img_loading()
         engine = pyttsx3.init()
         rate = engine.getProperty('rate')
         engine.setProperty('rate', rate - 20)
@@ -125,7 +132,6 @@ class Bot:
     def run(self):
         while True:
             try:
-                print("parla")
                 with speech_recognition.Microphone() as mic:
                     self.recognizer.adjust_for_ambient_noise(mic, 0.2)
                     audio = self.recognizer.listen(mic)
@@ -142,8 +148,7 @@ class Bot:
                         if data["name"][0] == "x":
                             answer = random.choice(inputs_outputs_ita.BOT_SALUTA).replace("utente", "")
                             self.talk(answer)
-                            if random.randint(1, 5) == 1:
-                                self.talk("se vuoi impostare un nome, dimmi il mio nome è più il tuo nome")
+
                         else:
                             answer = random.choice(inputs_outputs_ita.BOT_SALUTA).replace("utente", data["name"][0])
                             self.talk(answer)
@@ -157,9 +162,14 @@ class Bot:
                                 print(text)
 
 
+                                # Get commands
+                                if text == "info":
+                                    self.talk("ti mostro ciò che puoi fare con me")
+                                    IMAGE_COMMANDS.show()
+
 
                                 # Set username
-                                if "mio nome è" in text:
+                                elif "mio nome è" in text:
                                     try:
                                         split = text.split()
                                         user_name_index = split.index("è") + 1
@@ -470,14 +480,19 @@ class Bot:
                                     self.talk(answer)
 
 
+                                # Handling complaints
+                                elif any(user_input in text for user_input in inputs_outputs_ita.USER_SI_LAMENTA):
+                                    answer = random.choice(inputs_outputs_ita.BOT_GESTISCE_LAMENTELE)
+                                    self.talk(answer)
+
+
                                 # Searching on wikipedia
                                 elif any(user_input in text for user_input in inputs_outputs_ita.USER_CHIEDE_DI_CERCARE):
                                     for user_input in inputs_outputs_ita.USER_CHIEDE_DI_CERCARE:
                                         if user_input in text:
-                                            query = text.replace(user_input, "")
+                                            query = text.replace(user_input, "").strip()
 
-                                    self.talk(f"cerco informazionni su {query}")
-                                    self.set_img_loading()
+                                    self.talk(f"cerco informazionni su {query}", mood="loading")
                                     try:
                                         search_result = wikipedia.summary(query, sentences=1)
                                         print(search_result)
@@ -487,14 +502,16 @@ class Bot:
                                     except wikipedia.exceptions.DisambiguationError:
                                         self.talk(f"ci sono diversi risultati per {query}, ho bisogno che tu sia"
                                                   f"più specifico")
+                                    except requests.exceptions.JSONDecodeError:
+                                        self.talk("c'è stato un errore nella ricerca")
 
 
-                                # Plays something on youtube
+                                # Plays something on YouTube
                                 elif "metti" in text and "un video" in text or "su youtube" in text or "una canzone di" in text:
                                     query = text
                                     for words in inputs_outputs_ita.USER_CERCA_SU_YT:
                                         if words in query:
-                                            query = query.replace(words, "")
+                                            query = query.replace(words, "").strip()
 
                                     self.talk(f"va bene metto un video di {query}")
                                     print(f"cerco su youtube: {query}")
@@ -506,6 +523,10 @@ class Bot:
                                 elif "apri whatsapp" in text:
                                     self.talk("va bene, ti apro whatsapp")
                                     AppOpener.open("whatsapp")
+
+                                elif "chiudi whatsapp" in text:
+                                    self.talk("chiudo whatsapp")
+                                    AppOpener.close("whatsapp")
 
 
                                 # Opens Google
@@ -530,6 +551,11 @@ class Bot:
                                     self.set_img_sleep()
                                     self.is_active = False
 
+
+                                elif text is not None:
+                                    self.talk("non ho capito")
+                                    continue
+
                                 else:
                                     continue
 
@@ -538,3 +564,10 @@ class Bot:
 
             except speech_recognition.UnknownValueError:
                 continue
+
+
+
+
+
+
+bot = Bot()
