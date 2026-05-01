@@ -1,0 +1,16 @@
+START_INPUT: "ok"
+INFO: "info"
+SET_USERNAME: "il mio nome è" + nome
+DELETE_NAME: "elimina il mio nome"
+USER_ASKS_WEATHER: ["meteo", "che tempo fa"] nell'input
+CHANGE_LOCATION: "cambia località"
+TIMER: "timer" nell'input con n° minuti e/o n° sec
+USER_ASKS_HOW_IS_GOING: ["come stai", "tutto bene", "come va", "com'è", "stai bene"] nell'input
+USER_THANKS: ["grazie", "ringrazio", "ringraziarti"] nell'input
+USER_ASKS_TO_SEARCH: ["chi è", "che cos'è", "chi sono", "dov'è", "cerca informazioni su", "cerca"] nell'input
+USER_SEARCHES_ON_YT: ["una canzone di", "una canzone", "su youtube", "un video di", "un video", "metti"] nell'input
+USER_COMPLAINS: ["sei stupido", "non capisci niente", "non hai capito", "sei ignorante"] nell'input
+OPEN_WHATSAPP: "apri whatsapp"
+OPEN_GOOGLE: "apri google"
+ASK_JOKE: ["barzelletta", "battuta"] nell'input
+SEND_BOT_TO_SLEEP: "dormi"

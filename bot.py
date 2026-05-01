@@ -1,4 +1,5 @@
-import inputs_outputs_ita
+import inputs_outputs_it
+import inputs_outputs_en
 from tkinter import *
 from PIL import Image, ImageTk
 import pandas as pd
@@ -16,6 +17,22 @@ from dotenv import load_dotenv
 import os
 
 
+def set_language():
+    language_selection = input("Select language: It/En? ").lower()
+    if language_selection == "it":
+        user_lang = inputs_outputs_it
+        return user_lang
+    elif language_selection == "en":
+        user_lang = inputs_outputs_en
+        return user_lang
+    else:
+        print("Write 'It' or 'En'")
+        set_language()
+
+
+language = set_language()
+print(language)
+
 load_dotenv()
 
 IMAGE_SLEEP = Image.open("images/sleep.png")
@@ -24,14 +41,22 @@ IMAGE_TALK = Image.open("images/talk.png")
 IMAGE_TIMER = Image.open("images/timer.png")
 IMAGE_LOADING = Image.open("images/loading.png")
 
-IMAGE_COMMANDS = Image.open("info/commands-ita.png")
 
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 GEOCODING_ENDPOINT = "https://api.openweathermap.org/geo/1.0/direct"
 WEATHER_FORECAST_ENDPOINT = "https://api.openweathermap.org/data/2.5/forecast"
 
 wikipedia.set_user_agent('Voice-Assistant/1.1 (contact@example.com)')
-wikipedia.set_lang("it")
+
+if language == inputs_outputs_en:
+    lang = "en"
+    audio_lang = "en-EN"
+    IMAGE_COMMANDS = Image.open("info/commands-en.png")
+elif language == inputs_outputs_it:
+    lang = "it"
+    audio_lang = "it-IT"
+    wikipedia.set_lang("it")
+    IMAGE_COMMANDS = Image.open("info/commands-it.png")
 
 
 class Bot:
@@ -44,8 +69,6 @@ class Bot:
         self.root.title("Bot")
 
         self.root.geometry("424x632")
-
-        print("Dire 'ok' per svegliare il bot\nDopodiché per conoscere i comandi dire 'info'")
 
         self.is_active = False
         self.start_timer = 0
@@ -96,6 +119,9 @@ class Bot:
         engine = pyttsx3.init()
         rate = engine.getProperty('rate')
         engine.setProperty('rate', rate - 20)
+        if language == inputs_outputs_en:
+            voices = engine.getProperty('voices')
+            engine.setProperty('voice', voices[1].id)
         engine.say(speech)
         engine.runAndWait()
         if mood == "normal":
@@ -112,7 +138,7 @@ class Bot:
             self.finish_timer = time.time()
             if self.finish_timer - self.start_timer >= self.timer:
                 self.set_img_timer()
-                self.talk("timer finito, premi enter per interrompermi", mood="timer")
+                self.talk(language.TIMER_FINISHED, mood="timer")
                 self.timer = 0
                 self.root.bind("<Return>", self.stop_timer)
 
@@ -135,8 +161,7 @@ class Bot:
                 with speech_recognition.Microphone() as mic:
                     self.recognizer.adjust_for_ambient_noise(mic, 0.2)
                     audio = self.recognizer.listen(mic)
-
-                    text = self.recognizer.recognize_google(audio, language="it-IT")
+                    text = self.recognizer.recognize_google(audio, language=audio_lang)
                     text = text.lower()
                     print(text)
 
@@ -146,42 +171,45 @@ class Bot:
 
                         data = pd.read_csv("user-data.csv")
                         if data["name"][0] == "x":
-                            answer = random.choice(inputs_outputs_ita.BOT_SALUTA).replace("utente", "")
+                            answer = random.choice(language.BOT_GREETS).replace("user", "")
                             self.talk(answer)
 
                         else:
-                            answer = random.choice(inputs_outputs_ita.BOT_SALUTA).replace("utente", data["name"][0])
+                            answer = random.choice(language.BOT_GREETS).replace("user", data["name"][0])
                             self.talk(answer)
 
                         while self.is_active:
                             try:
                                 self.recognizer.adjust_for_ambient_noise(mic, 0.2)
                                 audio = self.recognizer.listen(mic)
-                                text = self.recognizer.recognize_google(audio, language="it-IT")
+                                text = self.recognizer.recognize_google(audio, language=audio_lang)
                                 text = text.lower()
                                 print(text)
 
 
                                 # Get commands
                                 if text == "info":
-                                    self.talk("ti mostro ciò che puoi fare con me")
+                                    self.talk(language.BOT_TELLS_INFO)
                                     IMAGE_COMMANDS.show()
 
 
                                 # Set username
-                                elif "mio nome è" in text:
+                                elif language.SET_USERNAME in text:
                                     try:
                                         split = text.split()
-                                        user_name_index = split.index("è") + 1
+                                        if language == inputs_outputs_it:
+                                            user_name_index = split.index("è") + 1
+                                        elif language == inputs_outputs_en:
+                                            user_name_index = split.index("is") + 1
                                         user_name = split[user_name_index]
                                         if user_name == "x":
-                                            self.talk("nome non valido")
+                                            self.talk(language.NAME_REFUSED)
                                             continue
-                                        self.talk(f"Il tuo nome è {user_name}, conferma dicendo sì o no")
+                                        self.talk(language.CONFIRM_NAME.replace("user", user_name))
                                         confirm = False
 
                                     except IndexError:
-                                        self.talk("non ho capito")
+                                        self.talk(language.NOT_UNDERSTOOD)
                                         continue
 
                                     while not confirm:
@@ -190,44 +218,39 @@ class Bot:
                                             audio = self.recognizer.listen(mic)
                                             if self.is_talking:
                                                 continue
-                                            confirm_text = self.recognizer.recognize_google(audio, language="it-IT")
+                                            confirm_text = self.recognizer.recognize_google(audio, language=audio_lang)
                                             confirm_text = confirm_text.lower().split()
                                             print(confirm_text)
 
-                                            if "sì" in confirm_text:
+                                            if "sì" in confirm_text or "yes" in confirm_text or "yeah" in confirm_text:
                                                 data.loc[0, "name"] = user_name
                                                 data.to_csv("user-data.csv", index=False)
 
-                                                self.talk(
-                                                    "Okay, memorizzato! se in seguito vuoi modificarlo dimmi il "
-                                                    "mio nome è più il tuo nome, per eliminarlo dimmi elimina "
-                                                    "il mio nome")
+                                                self.talk(language.NAME_SAVED)
                                                 confirm = True
                                                 continue
 
                                             if "no" in confirm_text:
-                                                self.talk("mi spiace, se vuoi impostare un nome, dimmi il mio nome "
-                                                          "è più il tuo nome")
+                                                self.talk(language.NAME_NOT_CONFIRMED)
                                                 confirm = True
 
                                             else:
-                                                self.talk("mi spiace, non ho capito, dimmi sì o no")
+                                                self.talk(language.CONFIRM_NOT_UNDERSTOOD)
 
 
                                         except speech_recognition.UnknownValueError:
-                                            self.talk("non ho capito, puoi ripetere?")
+                                            self.talk(language.CONFIRM_NOT_UNDERSTOOD)
 
 
 
                                 # Delete username
-                                elif "elimina il mio nome" in text:
+                                elif language.DELETE_NAME in text:
                                     data = pd.read_csv("user-data.csv")
                                     if data["name"][0] == "x":
-                                        self.talk("non c'è nessun nome impostato al momento")
+                                        self.talk(language.NO_NAME_TO_DELETE)
                                     else:
                                         name_to_delete = data["name"][0]
-                                        self.talk(f"il nome attuale è {name_to_delete}, vuoi eliminarlo? "
-                                                  f"Conferma dicendo sì o no")
+                                        self.talk(language.CONFIRM_DELETE_NAME.replace("user", name_to_delete))
 
                                         confirm = False
 
@@ -237,36 +260,36 @@ class Bot:
                                                 audio = self.recognizer.listen(mic)
                                                 if self.is_talking:
                                                     continue
-                                                confirm_text = self.recognizer.recognize_google(audio, language="it-IT")
+                                                confirm_text = self.recognizer.recognize_google(audio, language=audio_lang)
                                                 confirm_text = confirm_text.lower().split()
                                                 print(confirm_text)
 
                                                 self.wait_if_is_talking()
 
-                                                if "sì" in confirm_text:
+                                                if "sì" in confirm_text or "yes" in confirm_text or "yeah" in confirm_text:
                                                     data.loc[0, "name"] = "x"
                                                     data.to_csv("user-data.csv", index=False)
 
-                                                    self.talk("nome eliminato con successo")
+                                                    self.talk(language.NAME_DELETED)
                                                     confirm = True
                                                     continue
 
                                                 if "no" in confirm_text:
-                                                    self.talk("d'accordo se cambi idea ripeti il comando")
+                                                    self.talk(language.NAME_NOT_DELETED)
                                                     confirm = True
 
                                                 else:
-                                                    self.talk("mi spiace, non ho capito, dimmi sì o no")
+                                                    self.talk(language.CONFIRM_NOT_UNDERSTOOD)
 
 
                                             except speech_recognition.UnknownValueError:
-                                                self.talk("non ho capito, puoi ripetere?")
+                                                self.talk(language.CONFIRM_NOT_UNDERSTOOD)
 
 
-                                # Get weather
-                                elif "meteo" in text or "che tempo fa" in text:
+
+                                elif any(user_input in text for user_input in language.USER_ASKS_WEATHER):
                                     if data["location"][0] == "x":
-                                        self.talk("non c'è un luogo impostato al momento, dimmi la tua località")
+                                        self.talk(language.MISSING_LOCATION)
                                         location = False
 
                                         while not location:
@@ -275,14 +298,14 @@ class Bot:
                                                 audio = self.recognizer.listen(mic)
                                                 if self.is_talking:
                                                     continue
-                                                user_location = self.recognizer.recognize_google(audio, language="it-IT")
+                                                user_location = self.recognizer.recognize_google(audio, language=audio_lang)
                                                 user_location = user_location.lower()
                                                 print(f"location: {user_location}")
 
                                                 self.wait_if_is_talking()
 
                                                 if user_location == "x":
-                                                    self.talk("località non valida, prego ripeti")
+                                                    self.talk(language.INVALID_LOCATION)
                                                     continue
 
                                                 geocoding_params = {
@@ -300,17 +323,15 @@ class Bot:
                                                     data.loc[0, "lat"] = user_lat
                                                     data.loc[0, "lon"] = user_lon
                                                     data.to_csv("user-data.csv", index=False)
-                                                    self.talk(f"{user_location} impostata come località, in futuro, per"
-                                                          f"cambiarla dimmi cambia località")
+                                                    self.talk(language.LOCATION_CONFIRMED.replace("user_location", user_location))
                                                     location = True
 
                                                 except IndexError:
-                                                    self.talk("località non trovata, prego ripeti solo il nome della"
-                                                              "località")
+                                                    self.talk(language.LOCATION_NOT_UNDERSTOOD)
 
 
                                             except speech_recognition.UnknownValueError:
-                                                self.talk("non ho capito, puoi ripetere?")
+                                                self.talk(language.NOT_UNDERSTOOD)
 
 
                                     else:
@@ -324,7 +345,7 @@ class Bot:
                                         "lat": user_lat,
                                         "lon": user_lon,
                                         "appid": WEATHER_API_KEY,
-                                        "lang": "it",
+                                        "lang": lang,
                                         "units": "metric"
                                     }
 
@@ -336,16 +357,18 @@ class Bot:
                                     tomorrow_description = response.json()["list"][8]["weather"][0]["description"]
                                     tomorrow_temperature = response.json()["list"][8]["main"]["temp"]
 
-                                    self.talk(f"Il tempo di oggi a {user_location} sarà {today_description} e le"
-                                              f"temperature si aggireranno intorno ai {today_temperature} gradi celsius"
-                                              f"Invece domani sarà {tomorrow_description} e le temperature intorno"
-                                              f"ai {tomorrow_temperature} gradi")
+
+                                    self.talk(language.WEATHER_FORECAST.replace("user_location", user_location).replace(
+                                        "today_description", today_description).replace("today_temperature",str(today_temperature)).
+                                              replace("tomorrow_description", tomorrow_description).replace(
+                                        "tomorrow_temperature", str(tomorrow_temperature))
+                                    )
 
 
 
                                 # Change user location
-                                elif "cambia località" in text:
-                                    self.talk("dimmi la tuà località")
+                                elif language.CHANGE_LOCATION in text:
+                                    self.talk(language.BOT_ASKS_LOCATION)
                                     location = False
 
                                     while not location:
@@ -354,14 +377,14 @@ class Bot:
                                             audio = self.recognizer.listen(mic)
                                             if self.is_talking:
                                                 continue
-                                            user_location = self.recognizer.recognize_google(audio, language="it-IT")
+                                            user_location = self.recognizer.recognize_google(audio, language=audio_lang)
                                             user_location = user_location.lower()
                                             print(f"location: {user_location}")
 
                                             self.wait_if_is_talking()
 
                                             if user_location == "x":
-                                                self.talk("località non valida, prego ripeti")
+                                                self.talk(language.INVALID_LOCATION)
                                                 continue
 
                                             geocoding_params = {
@@ -379,18 +402,16 @@ class Bot:
                                                 data.loc[0, "lat"] = user_lat
                                                 data.loc[0, "lon"] = user_lon
                                                 data.to_csv("user-data.csv", index=False)
-                                                self.talk(f"{user_location} impostata come località, in futuro, per "
-                                                          f"cambiarla dimmi cambia località")
+                                                self.talk(language.LOCATION_CONFIRMED)
                                                 location = True
 
                                             except IndexError:
-                                                self.talk("località non trovata, prego ripeti solo il nome della"
-                                                              "località")
+                                                self.talk(language.LOCATION_NOT_UNDERSTOOD)
 
 
 
                                         except speech_recognition.UnknownValueError:
-                                            self.talk("non ho capito, puoi ripetere?")
+                                            self.talk(language.NOT_UNDERSTOOD)
 
 
 
@@ -400,67 +421,61 @@ class Bot:
                                     minutes_timer = 0
 
                                     if self.timer != 0:
-                                        self.talk("c'è già un timer in corso")
+                                        self.talk(language.TIMER_ALREADY_EXISTS)
                                         continue
-                                    if "secondi" in text:
-                                        seconds_index = text.split().index("secondi")
+                                    if language.SECONDS in text:
+                                        seconds_index = text.split().index(language.SECONDS)
                                         seconds_timer = text.split()[seconds_index - 1]
                                         if seconds_timer == "un":
                                             seconds_timer = 1
-                                        if "minuti" in text:
-                                            minutes_index = text.split().index("minuti")
+                                        if language.MINUTES in text:
+                                            minutes_index = text.split().index(language.MINUTES)
                                             minutes_timer = text.split()[minutes_index - 1]
-                                        elif "minuto" in text:
+                                        elif language.MINUTE in text:
                                             minutes_timer = 1
 
 
-                                    elif "minuti" in text:
-                                            minutes_index = text.split().index("minuti")
+                                    elif language.MINUTES in text:
+                                            minutes_index = text.split().index(language.MINUTES)
                                             minutes_timer = text.split()[minutes_index - 1]
-                                            if "secondo" in text:
+                                            if language.SECOND in text:
                                                 seconds_timer = 1
 
-                                    elif "minuto" in text:
+                                    elif language.MINUTE in text:
                                         minutes_timer = 1
-                                        if "secondi" in text:
-                                            seconds_index = text.split().index("secondi")
+                                        if language.SECONDS in text:
+                                            seconds_index = text.split().index(language.SECONDS)
                                             seconds_timer = text.split()[seconds_index - 1]
-                                        elif "secondo" in text:
+                                        elif language.SECOND in text:
                                             seconds_timer = 1
 
-                                    elif "secondo" in text:
+                                    elif language.SECOND in text:
                                         seconds_timer = 1
 
                                     else:
-                                        self.talk("Non ho capito di quanto tempo impostare il timer")
+                                        self.talk(language.TIMER_NOT_UNDERSTOOD)
 
                                     self.timer = int(minutes_timer) * 60 + int(seconds_timer)
 
                                     if self.timer == 0:
-                                        self.talk("non posso impostare un timer di zero secondi dai")
+                                        self.talk(language.INVALID_TIMER)
                                         continue
 
                                     if minutes_timer == 1:
                                         if seconds_timer == 1:
-                                            self.talk(
-                                                f"okay, imposto un timer di un minuto e un secondo")
-                                            print(f"{minutes_timer} minuto e {seconds_timer} secondo")
+                                            self.talk(language.ONE_MIN_ONE_SEC_TIMER)
                                         else:
-                                            self.talk(
-                                                f"okay, imposto un timer di un minuto e {seconds_timer} secondi")
-                                            print(f"{minutes_timer} minuto e {seconds_timer} secondi")
+                                            self.talk(language.ONE_MIN_TIMER.replace("seconds_timer", str(seconds_timer)))
                                     elif seconds_timer == 1:
-                                        self.talk(
-                                            f"okay, imposto un timer di {minutes_timer} minuti e un secondo")
-                                        print(f"{minutes_timer} minuti e {seconds_timer} secondo")
+                                        self.talk(language.ONE_SEC_TIMER.replace("minutes_timer", str(minutes_timer)))
                                     else:
-                                        self.talk(
-                                            f"okay, imposto un timer di {minutes_timer} minuti e {seconds_timer}"
-                                            f"secondi")
-                                        print(f"{minutes_timer} minuti e {seconds_timer} secondi")
+                                        self.talk(language.SET_TIMER.replace("minutes_timer", str(minutes_timer)).
+                                                  replace("seconds_timer", str(seconds_timer)))
+
+                                    print(f"{minutes_timer} min, {seconds_timer} sec")
 
 
-                                    print(f"{self.timer} secondi totali")
+                                    print(f"{self.timer} total seconds")
                                     self.start_timer = time.time()
                                     threading.Thread(target=self.check_timer, daemon=True).start()
 
@@ -469,83 +484,84 @@ class Bot:
 
 
                                 # Asking how is going
-                                elif any(user_input in text for user_input in inputs_outputs_ita.USER_CHIEDE_COME_VA):
-                                    answer = random.choice(inputs_outputs_ita.BOT_RISPONDE_COME_VA)
+                                elif any(user_input in text for user_input in language.USER_ASKS_HOW_IS_GOING):
+                                    answer = random.choice(language.BOT_ANSWERS_HOW_IS_GOING)
                                     self.talk(answer)
 
 
                                 # Saying thank you
-                                elif any(user_input in text for user_input in inputs_outputs_ita.USER_RINGRAZIA):
-                                    answer = random.choice(inputs_outputs_ita.BOT_RISPONDE_A_GRAZIE)
+                                elif any(user_input in text for user_input in language.USER_THANKS):
+                                    answer = random.choice(language.BOT_ANSWERS_THANKS)
                                     self.talk(answer)
 
 
                                 # Handling complaints
-                                elif any(user_input in text for user_input in inputs_outputs_ita.USER_SI_LAMENTA):
-                                    answer = random.choice(inputs_outputs_ita.BOT_GESTISCE_LAMENTELE)
+                                elif any(user_input in text for user_input in language.USER_COMPLAINS):
+                                    answer = random.choice(language.BOT_HANDLES_COMPLAINTS)
                                     self.talk(answer)
 
 
                                 # Searching on wikipedia
-                                elif any(user_input in text for user_input in inputs_outputs_ita.USER_CHIEDE_DI_CERCARE):
-                                    for user_input in inputs_outputs_ita.USER_CHIEDE_DI_CERCARE:
+                                elif any(user_input in text for user_input in language.USER_ASKS_TO_SEARCH):
+                                    for user_input in language.USER_ASKS_TO_SEARCH:
                                         if user_input in text:
                                             query = text.replace(user_input, "").strip()
 
-                                    self.talk(f"cerco informazionni su {query}", mood="loading")
+
+                                    speech = language.BOT_SEARCHES_INFO.replace("query", query)
+                                    self.talk(speech, mood="loading")
                                     try:
                                         search_result = wikipedia.summary(query, sentences=1)
                                         print(search_result)
-                                        self.talk(f"ecco cos'ho trovato:{search_result}")
+                                        self.talk(language.SEARCH_RESULT + search_result)
                                     except wikipedia.exceptions.PageError:
-                                        self.talk("nessun risultato trovato")
+                                        self.talk(language.NO_SEARCH_RESULTS)
                                     except wikipedia.exceptions.DisambiguationError:
-                                        self.talk(f"ci sono diversi risultati per {query}, ho bisogno che tu sia"
-                                                  f"più specifico")
+                                        answer = language.DISAMBIGUATION_ERROR.replace("query", query)
+                                        self.talk(answer)
                                     except requests.exceptions.JSONDecodeError:
-                                        self.talk("c'è stato un errore nella ricerca")
+                                        self.talk(language.ERROR_DURING_RESEARCH)
+                                    except wikipedia.exceptions.WikipediaException:
+                                        self.talk(language.ERROR_DURING_RESEARCH)
 
 
-                                # Plays something on YouTube
-                                elif "metti" in text and "un video" in text or "su youtube" in text or "una canzone di" in text:
+
+                                elif any(user_input in text for user_input in language.USER_SEARCHES_ON_YT):
                                     query = text
-                                    for words in inputs_outputs_ita.USER_CERCA_SU_YT:
+                                    for words in language.USER_SEARCHES_ON_YT:
                                         if words in query:
                                             query = query.replace(words, "").strip()
 
-                                    self.talk(f"va bene metto un video di {query}")
-                                    print(f"cerco su youtube: {query}")
+                                    self.talk(language.BOT_PLAYS_VIDEO.replace("query", query))
+                                    print(f"search on youtube: {query}")
                                     pywhatkit.playonyt(query)
 
 
 
                                 # Opens WhatsApp
-                                elif "apri whatsapp" in text:
-                                    self.talk("va bene, ti apro whatsapp")
+                                elif language.OPEN_WHATSAPP in text:
+                                    self.talk(language.BOT_OPENS_WHATSAPP)
                                     AppOpener.open("whatsapp")
 
-                                elif "chiudi whatsapp" in text:
-                                    self.talk("chiudo whatsapp")
-                                    AppOpener.close("whatsapp")
 
 
                                 # Opens Google
-                                elif "apri google" in text:
-                                    self.talk("ti apro subito google")
+                                elif language.OPEN_GOOGLE in text:
+                                    self.talk(language.BOT_OPENS_GOOGLE)
                                     AppOpener.open("google chrome")
 
 
 
                                 # Tells a joke
-                                elif "barzelletta" in text or "battuta" in text:
-                                    joke = pyjokes.get_joke(language="it", category="all")
+                                elif any(user_input in text for user_input in language.ASK_JOKE):
+                                    joke = pyjokes.get_joke(language=lang, category="all")
                                     print(f"joke: {joke}")
                                     self.talk(joke)
 
 
                                 # Bot goes to sleep
-                                elif "dormi" in text:
-                                    answer = random.choice(inputs_outputs_ita.BOT_SI_CONGEDA)
+                                elif language.SEND_BOT_TO_SLEEP in text:
+                                    answer = random.choice(language.BOT_GOES_TO_SLEEP)
                                     self.talk(answer)
 
                                     self.set_img_sleep()
@@ -553,7 +569,7 @@ class Bot:
 
 
                                 elif text is not None:
-                                    self.talk("non ho capito")
+                                    self.talk(language.NOT_UNDERSTOOD)
                                     continue
 
                                 else:

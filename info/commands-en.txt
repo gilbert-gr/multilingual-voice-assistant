@@ -1,0 +1,15 @@
+START_INPUT = "ok"
+SET_USERNAME = "my name is" + name
+DELETE_NAME = "delete my name"
+USER_ASKS_WEATHER = ["weather", "forecast"] in the input
+CHANGE_LOCATION = "change location"
+TIMERS = "timer" in the input with n° minutes and n° seconds
+USER_ASKS_HOW_IS_GOING = ["how is going", "what's up", "how are you", "how's life", "how are you doing"] in the input
+USER_THANKS = ["thank"] in the input
+USER_ASKS_TO_SEARCH = ["who is", "what's", "who are", "where is", "search info of", "search"] in the input
+USER_SEARCHES_ON_YT = ["a song of", "a song", "on youtube", "a video of", "a video", "play", "put"] in the input
+USER_COMPLAINS = ["you are stupid", "you don't understand", "you ignorant"] in the input
+OPEN_WHATSAPP = "open whatsapp"
+OPEN_GOOGLE = "open google"
+ASK_JOKE = ["joke"] in the input
+SEND_BOT_TO_SLEEP = "sleep"
