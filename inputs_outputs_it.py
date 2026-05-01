@@ -58,7 +58,7 @@ BOT_ANSWERS_HOW_IS_GOING = ["tutto bene grazie", "oggi alla grande!", "sono un b
 USER_THANKS = ["grazie", "ringrazio", "ringraziarti"]
 BOT_ANSWERS_THANKS = ["sono programmato per questo", "ci mancherebbe", "tanto non ho altro da fare"]
 
-USER_ASKS_TO_SEARCH = ["chi è", "che cos'è", "chi sono", "dov'è", "cerca informazioni su", "cerca"]
+USER_ASKS_TO_SEARCH = ["chi è", "che cos'è", "chi sono", "dov'è", "cerca informazioni su", "cerca", "cosa vuol dire"]
 USER_SEARCHES_ON_YT = ["una canzone di", "una canzone", "su youtube", "un video di", "un video", "metti"]
 BOT_PLAYS_VIDEO = "va bene metto un video di query"
 
@@ -75,3 +75,5 @@ BOT_OPENS_GOOGLE = "ti apro subito google"
 ASK_JOKE = ["barzelletta", "battuta"]
 
 SEND_BOT_TO_SLEEP = "dormi"
+
+CHANGED_LANGUAGE = "lingua impostata italiano"

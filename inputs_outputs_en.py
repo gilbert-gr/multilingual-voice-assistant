@@ -57,7 +57,7 @@ BOT_ANSWERS_HOW_IS_GOING = ["it's going well", "pretty good", "I'm a bot, I don'
 USER_THANKS = ["thank"]
 BOT_ANSWERS_THANKS = ["I'm programmed for this", "no problem", "I have nothing else to do anyway"]
 
-USER_ASKS_TO_SEARCH = ["who is", "what's", "who are", "where is", "search info of", "search"]
+USER_ASKS_TO_SEARCH = ["who is", "what's", "who are", "where is", "search info of", "search", "what does it means"]
 USER_SEARCHES_ON_YT = ["a song of", "a song", "on youtube", "a video of", "a video", "play", "put"]
 BOT_PLAYS_VIDEO = "okay I play a video of query"
 
@@ -74,3 +74,5 @@ BOT_OPENS_GOOGLE = "I open google immediately"
 ASK_JOKE = ["joke"]
 
 SEND_BOT_TO_SLEEP = "sleep"
+
+CHANGED_LANGUAGE = "language set to english"
