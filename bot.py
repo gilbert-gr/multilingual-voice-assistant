@@ -432,7 +432,7 @@ class Bot:
                                                 data.loc[0, "lat"] = user_lat
                                                 data.loc[0, "lon"] = user_lon
                                                 data.to_csv("user-data.csv", index=False)
-                                                self.talk(self.language.LOCATION_CONFIRMED)
+                                                self.talk(self.language.LOCATION_CONFIRMED.replace("user_location", user_location))
                                                 location = True
 
                                             except IndexError:
