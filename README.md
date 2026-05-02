@@ -8,8 +8,10 @@ The application provides a seamless interaction layer between the user and vario
 ## 📺 Demo
 
 ### 🎬 Check out the assistant in action:
+#### Research option
 [![Multilingual Voice Assistant Demo Research](https://img.youtube.com/vi/LyT-MjmvaLM/maxresdefault.jpg)](https://www.youtube.com/watch?v=LyT-MjmvaLM)
-[![Multilingual Voice Assistant Demo](https://img.youtube.com/vi/d8zwXl5I4MY/hqdefault.jpg)](https://www.youtube.com/watch?v=d8zwXl5I4MY)
+#### Overview
+[![Multilingual Voice Assistant Demo](https://img.youtube.com/vi/d8zwXl5I4MY/maxresdefault.jpg)](https://www.youtube.com/watch?v=d8zwXl5I4MY)
 
 
 ---
