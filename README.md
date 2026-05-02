@@ -28,18 +28,18 @@ The application provides a seamless interaction layer between the user and vario
 ---
 ### 🛠️ Functionalities (Voice Commands)
 + 👤 Identity Management
-+ Set, confirm, and delete user profiles
-+ Data stored locally with persistent storage
+  + Set, confirm, and delete user profiles
+  + Data stored locally with persistent storage
 + 🌦️ Meteorological Data
-+ Current weather conditions
-+ 24-hour forecast via OpenWeatherMap API
+  + Current weather conditions
+  + 24-hour forecast via OpenWeatherMap API
 + 📚 Knowledge Retrieval
-+ Wikipedia search with automatic disambiguation handling
+  + Wikipedia search with automatic disambiguation handling
 + 🎯 Productivity & Entertainment
-+ Voice-controlled countdown timers (visual + audio alerts)
-+ Application launcher (e.g., WhatsApp, Google Chrome)
-+ YouTube music/video playback
-+ Random joke generator (PyJokes)
+  + Voice-controlled countdown timers (visual + audio alerts)
+  + Application launcher (e.g., WhatsApp, Google Chrome)
+  + YouTube music/video playback
+  + Random joke generator (PyJokes)
 
 ---
 ### 🧠 Architecture & Technical Decisions
